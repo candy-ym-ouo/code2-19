@@ -29,3 +29,25 @@ export const gameApi = {
     body: JSON.stringify(seed === undefined || seed === null ? {} : { seed })
   })
 };
+
+function warehouseRequest(path, body) {
+  return request(path, {
+    method: 'POST',
+    body: JSON.stringify(body ?? {})
+  });
+}
+
+export const warehouseApi = {
+  get: () => request('/api/warehouse'),
+  reserve: (input) => warehouseRequest('/api/warehouse/reservations', input),
+  commit: (id, input) => warehouseRequest(`/api/warehouse/reservations/${id}/commit`, input),
+  rollback: (id, input) => warehouseRequest(`/api/warehouse/reservations/${id}/rollback`, input),
+  expire: (id, input) => warehouseRequest(`/api/warehouse/reservations/${id}/expire`, input),
+  openSnapshot: (input) => warehouseRequest('/api/warehouse/snapshots/open', input),
+  closeSnapshot: (input) => warehouseRequest('/api/warehouse/snapshots/close', input),
+  increaseCapacity: (zone, capacity, expectedRevision) => warehouseRequest('/api/warehouse/capacity', {
+    zone,
+    capacity,
+    expectedRevision
+  })
+};

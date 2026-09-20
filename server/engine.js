@@ -259,6 +259,7 @@ export function createInitialState({ seed = Date.now(), days = 14 } = {}) {
     history: [],
     lastReport: null,
     ending: null,
+    warehouse: null,
     createdAt: now,
     updatedAt: now
   };

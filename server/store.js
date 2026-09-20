@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { GameRuleError, createInitialState, GAME_VERSION } from './engine.js';
+import { createWarehouseState, isValidWarehouseShape } from './warehouse.js';
 
 const VALID_PHASES = new Set(['planning', 'completed', 'failed']);
 
@@ -78,6 +79,14 @@ function hasValidStateShape(state) {
   if (!hasValidEnding(state.ending)) return false;
   if (state.phase === 'planning' && state.ending != null) return false;
   if (state.phase !== 'planning' && !hasValidEnding(state.ending)) return false;
+
+  // warehouse 字段缺失的旧存档走迁移；字段存在但为假值或结构损坏才按损坏存档处理。
+  const warehouseIslandIds = state.islands.filter((island) => island.id !== 'skyport').map((island) => island.id);
+  if (Object.hasOwn(state, 'warehouse') && state.warehouse !== undefined
+    && (state.warehouse === null
+      || !isValidWarehouseShape(state.warehouse, warehouseIslandIds))) {
+    return false;
+  }
 
   if (!hasUniqueIds(state.islands) || !hasUniqueIds(state.couriers) || !hasUniqueIds(state.letters)) return false;
   if (!state.islands.every((island) => (
@@ -169,6 +178,12 @@ function normalizeStoredState(parsed) {
       }
     }
   }
+  // 旧存档没有中转仓模块：挂载全新台账，保留游戏进度。
+  // 能走到这里的存档若带 warehouse 字段则已通过结构校验。
+  if (!isPlainObject(parsed.warehouse)) {
+    parsed.warehouse = createWarehouseState();
+    changed = true;
+  }
   return { state: parsed, changed };
 }
 
@@ -186,6 +201,7 @@ export class GameStore {
     if (!fs.existsSync(this.filePath)) {
       this.recovery = null;
       const initialState = createInitialState(this.options);
+      initialState.warehouse = createWarehouseState();
       try {
         this.state = initialState;
         this.save();
@@ -227,6 +243,7 @@ export class GameStore {
 
     fs.renameSync(this.filePath, backupPath);
     const recoveredState = createInitialState(this.options);
+    recoveredState.warehouse = createWarehouseState();
     this.recovery = {
       reason: `存档无法读取，已备份为 ${path.basename(backupPath)}：${error.message}`
     };
@@ -273,6 +290,7 @@ export class GameStore {
     const previousState = this.state;
     const previousRecovery = this.recovery;
     const nextState = createInitialState({ ...this.options, seed });
+    nextState.warehouse = createWarehouseState();
     nextState.revision = Number.isInteger(previousState.revision) ? previousState.revision + 1 : 1;
     try {
       this.state = nextState;
