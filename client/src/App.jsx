@@ -6,6 +6,7 @@ import MapPanel from './components/MapPanel.jsx';
 import RelationsPanel from './components/RelationsPanel.jsx';
 import ReportDialog from './components/ReportDialog.jsx';
 import WeatherPanel from './components/WeatherPanel.jsx';
+import WarehousePanel from './components/WarehousePanel.jsx';
 
 function App() {
   const [game, setGame] = useState(null);
@@ -245,6 +246,7 @@ function App() {
             <WeatherPanel wind={game.wind} />
             <RelationsPanel game={game} relationChanges={projection?.relationChanges} />
           </div>
+          <WarehousePanel islands={game.islands} />
         </div>
 
         <div className="planning-column">

@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { GameStore } from './store.js';
+import { WarehouseStore } from './warehouse-store.js';
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const rootDirectory = path.resolve(currentDirectory, '..');
@@ -12,11 +13,14 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
 }
 const isProduction = process.env.NODE_ENV === 'production' || process.env.npm_lifecycle_event === 'start';
 const dataFile = process.env.DATA_FILE || path.join(currentDirectory, 'data', 'game-state.json');
+const warehouseDataFile = process.env.WAREHOUSE_DATA_FILE || path.join(currentDirectory, 'data', 'warehouse-state.json');
 const clientDist = path.join(rootDirectory, 'dist');
 const store = new GameStore(dataFile, { days: 14 });
 const initialState = store.load();
+const warehouseStore = new WarehouseStore(warehouseDataFile);
+warehouseStore.load();
 
-const app = createApp({ store, clientDist });
+const app = createApp({ store, warehouseStore, clientDist });
 const server = app.listen(port, () => {
   console.log(`[浮空岛邮政署] API 已启动：http://localhost:${port}`);
   console.log(`[浮空岛邮政署] 当前进度：第 ${initialState.day} 日 / ${initialState.days} 日`);

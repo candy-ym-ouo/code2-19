@@ -3,6 +3,7 @@ import path from 'node:path';
 import express from 'express';
 import { advanceDay, GameRuleError, previewPlan, publicGameState } from './engine.js';
 import { assertPlanningPhase } from './store.js';
+import { createWarehouseRouter } from './warehouse-routes.js';
 
 function getAssignments(body) {
   if (body === undefined || body === null) {
@@ -29,10 +30,14 @@ function assertExpectedRevision(state, expectedRevision) {
   }
 }
 
-export function createApp({ store, clientDist }) {
+export function createApp({ store, warehouseStore, clientDist }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
+
+  if (warehouseStore) {
+    app.use('/api/warehouse', createWarehouseRouter(warehouseStore));
+  }
 
   app.get('/api/health', (request, response) => {
     const state = store.getState();
